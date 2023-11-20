@@ -50,10 +50,54 @@ struct CPUBitmap {
         glutInit( &c, &dummy );
         glutInitDisplayMode( GLUT_SINGLE | GLUT_RGBA );
         glutInitWindowSize( x, y );
-        glutCreateWindow( "bitmap" );
+        glutCreateWindow( "h_bitmap" );
         glutKeyboardFunc(Key);
         glutDisplayFunc(Draw);
         glutMainLoop();
+    }
+
+    void save_as_bmp( const char* file_name ) {
+        save_image( file_name, pixels, x, y );
+    }
+
+    static void save_image( const char* file_name, unsigned char* buffer, int width, int height ) {
+        // the alpha channel will be written as 1.0, which is solid white
+        unsigned char *top = NULL;
+        FILE *f = fopen(file_name, "wb");
+        if (f != NULL) {
+            BITMAPFILEHEADER h;
+            BITMAPINFOHEADER ih;
+
+            memset(&h, 0, sizeof(h));
+            memset(&ih, 0, sizeof(ih));
+
+            h.bfType = 0x4d42;
+            h.bfSize = sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER) + width * height * 4;
+            h.bfOffBits = sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER);
+
+            ih.biSize = sizeof(BITMAPINFOHEADER);
+            ih.biWidth = width;
+            ih.biHeight = height;
+            ih.biPlanes = 1;
+            ih.biBitCount = 32;
+            ih.biCompression = BI_RGB;
+
+            top = (unsigned char *)malloc(width * height * 4);
+            if (top != NULL) {
+                unsigned char *p = top;
+                unsigned char *q = buffer + (width * (height - 1) * 4);
+                for (int i = 0; i < height; i++) {
+                    memcpy(p, q, width * 4);
+                    p += width * 4;
+                    q -= width * 4;
+                }
+                fwrite(&h, sizeof(h), 1, f);
+                fwrite(&ih, sizeof(ih), 1, f);
+                fwrite(top, width * height * 4, 1, f);
+                free(top);
+            }
+            fclose(f);
+        }
     }
 
      // static method used for glut callbacks

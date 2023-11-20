@@ -1,3 +1,12 @@
+/*
+ * This program is about rendering Julia Set in real time, which combines the technologies of parallel computing
+ * and interoperation between cuda and opengl. The final result is pretty fancy
+ *
+ *   w,a,s,d or mouse for movement
+ *   q,e or scroll for scaling
+ *   z,x, c,v for tuning the complex number C(Z=Z^2+C)
+ */
+
 #include "glad/glad.h"
 #include "GLFW/glfw3.h"
 #include <iostream>
@@ -109,7 +118,7 @@ int main() {
 
 int chapter2_julia_set() {
     const int image_size = DIM * DIM * 4;
-    auto* bitmap_sysmem = (unsigned char*)malloc(image_size);
+//    auto* bitmap_sysmem = (unsigned char*)malloc(image_size);
 //    unsigned char* dev_map;
     // zero-copy memory
 //    HANDLE_ERROR(cudaHostAlloc((void**)&zero_copy_map, image_size, cudaHostAllocMapped));
@@ -193,15 +202,10 @@ int chapter2_julia_set() {
     unsigned int texture;
     glGenTextures(1, &texture);
     glBindTexture(GL_TEXTURE_2D, texture);
-    // set the texture wrapping/filtering options (on the currently bound texture object)
-    // set texture wrapping to GL_REPEAT (default wrapping method)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    // set texture filtering parameters
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    // set texture filtering parameters
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    // use zero-copy memory as the texture
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, DIM, DIM, 0, GL_RGBA, GL_UNSIGNED_BYTE, bitmap_sysmem);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, DIM, DIM, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
 
     // 注册 OpenGL 缓冲区到 CUDA 图形资源
     GLuint bufferObj;
@@ -216,6 +220,8 @@ int chapter2_julia_set() {
     // 映射资源
     HANDLE_ERROR(cudaGraphicsMapResources(1, &resource, NULL));
     HANDLE_ERROR(cudaGraphicsResourceGetMappedPointer((void**)&devPtr, &size, resource));
+    // we should immediately unmap the resource, according to the RULES
+    HANDLE_ERROR(cudaGraphicsUnmapResources(1, &resource, NULL));
 
     dim3 blocks(DIM/32, DIM/32);
     dim3 threads(32,32);
@@ -234,7 +240,8 @@ int chapter2_julia_set() {
         glClear(GL_COLOR_BUFFER_BIT); // state-using function
 
         // memset the zero-copy memory
-        compute_julia_interop<<<blocks, threads>>>(devPtr, C, scale, shift_x, shift_y);
+        compute_julia_interop<<<blocks, threads>>>(devPtr, C,
+                                                   scale, shift_x, shift_y);
         HANDLE_ERROR(cudaDeviceSynchronize());
 
         // draw the rectangle
@@ -250,10 +257,9 @@ int chapter2_julia_set() {
         glfwPollEvents();
     }
 
-    HANDLE_ERROR(cudaGraphicsUnmapResources(1, &resource, NULL));
     HANDLE_ERROR(cudaGraphicsUnregisterResource(resource));
     // glfw: terminate, clearing all previously allocated GLFW resources.
-    free(bitmap_sysmem);
+//    free(bitmap_sysmem);
     glfwTerminate();
     return 0;
 }

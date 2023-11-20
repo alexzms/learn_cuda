@@ -1,3 +1,8 @@
+/*
+ * This program renders some interference fringes(cosine wave addition and visualization), this program intends to
+ * get myself familiar with a 2-dimensional grid.
+ */
+
 #include <iostream>
 #include "includes/book.h"
 #include "includes/cpu_anim.h"
@@ -8,7 +13,7 @@
 
 struct DataBlock {
     unsigned char *dev_bitmap;
-    CPUAnimBitmap *bitmap;
+    CPUAnimBitmap *h_bitmap;
 };
 
 void clean_up(DataBlock *d) {
@@ -84,20 +89,20 @@ void generate_frame(DataBlock *d, const int ticks) {
     dim3 threads(16, 16);
     calculate_frame<<<grid, threads>>>(d->dev_bitmap, ticks);
     HANDLE_ERROR(cudaDeviceSynchronize());
-    HANDLE_ERROR(cudaMemcpy(d->bitmap->get_ptr(), d->dev_bitmap,
-                            d->bitmap->image_size(), cudaMemcpyDeviceToHost));
+    HANDLE_ERROR(cudaMemcpy(d->h_bitmap->get_ptr(), d->dev_bitmap,
+                            d->h_bitmap->image_size(), cudaMemcpyDeviceToHost));
 //    for (int i = 0; i != DIM; ++i) {
 //        for (int j = 0; j != DIM; ++j) {
-//            calculate_frame_cpu(d->bitmap->get_ptr(), ticks, j, i);
+//            calculate_frame_cpu(d->h_bitmap->get_ptr(), ticks, j, i);
 //        }
 //    }
 }
 
 int main() {
-    DataBlock data;
+    DataBlock data{};
     CPUAnimBitmap bitmap(DIM, DIM, &data);
-    data.bitmap = &bitmap;
-    HANDLE_ERROR(cudaMalloc((void**)&data.dev_bitmap, data.bitmap->image_size()));
+    data.h_bitmap = &bitmap;
+    HANDLE_ERROR(cudaMalloc((void**)&data.dev_bitmap, data.h_bitmap->image_size()));
 
-    data.bitmap->anim_and_exit((void (*)(void*, int)) generate_frame, (void (*)(void*)) clean_up);
+    data.h_bitmap->anim_and_exit((void (*)(void*, int)) generate_frame, (void (*)(void*)) clean_up);
 }

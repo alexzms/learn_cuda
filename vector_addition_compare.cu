@@ -1,3 +1,9 @@
+/*
+ * This program is rather easy, it just adds up two vectors, and check for the error between ground truth by cpu
+ * and results by cuda:gpu.
+ */
+
+
 #include <iostream>
 #include "includes/book.h"
 #include <chrono>

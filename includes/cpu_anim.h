@@ -62,7 +62,7 @@ struct CPUAnimBitmap {
         glutInit( &c, &dummy );
         glutInitDisplayMode( GLUT_DOUBLE | GLUT_RGBA );
         glutInitWindowSize( width, height );
-        glutCreateWindow( "bitmap" );
+        glutCreateWindow( "h_bitmap" );
         glutKeyboardFunc(Key);
         glutDisplayFunc(Draw);
         if (clickDrag != NULL)
@@ -108,7 +108,7 @@ struct CPUAnimBitmap {
             case 27:
                 CPUAnimBitmap*   bitmap = *(get_bitmap_ptr());
                 bitmap->animExit( bitmap->dataBlock );
-                //delete bitmap;
+                //delete h_bitmap;
                 exit(0);
         }
     }
